@@ -8,10 +8,12 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -30,7 +32,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -41,20 +48,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Marker mCurrLocationMarker;
     FusedLocationProviderClient mFusedLocationClient;
     Context context;
-    LatLng[] tca = null;
-
-
+    //LatLng[] pino = null;
+    MqttHelper mqtt;
+    LatLng pino=new LatLng(40.574291169345166,-8.748526252542232);
     //private static final String TAG = mapa.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getSupportActionBar().hide();
+
+        mqtt= new MqttHelper(getApplicationContext());
+
+
+
+
+        //Objects.requireNonNull(getSupportActionBar()).hide();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         mapFrag = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        assert mapFrag != null;
         mapFrag.getMapAsync(this);
+
+
+
+
+
+
 
 
     }
@@ -91,17 +111,56 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
 
-        /*for (int i = 0; i < tca.length; i++) {
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mqtt.subscribeToTopic("teste98",2);
+                mqtt.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+                    @Override
+                    public void connectComplete(boolean b, String s) {
+                        Log.w("connectado!!!!  ", s);
+                    }
+                    @Override
+                    public void connectionLost(Throwable throwable) {
+                    }
+                    @Override
+                    public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
+                        Log.w("login login", mqttMessage.toString());
+                        String x=mqttMessage.toString();
+                        String[] parts = x.split(",");
+                        double part1 = Double.parseDouble(parts[0]); // 004
+                        double part2 =Double.parseDouble(parts[1]);
+                        pino= new LatLng (part1,part2);
+                        mGoogleMap.clear();
+                        googleMap.addMarker(
+                                new MarkerOptions()
+                                        .draggable(false)
+                                        .position(pino)
+                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.autocarro)));
 
-            googleMap.addMarker(
-                    new MarkerOptions()
-                            .draggable(false)
-                            .position(tca[i]));
+                    }
+                    @Override
+                    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 
-        }*/
+                    }
+                });
+
+
+            }
+        }, 2000);
+
+
+
+
 
 
     }
+
+
+
+
+
 
 
     LocationCallback mLocationCallback = new LocationCallback() {

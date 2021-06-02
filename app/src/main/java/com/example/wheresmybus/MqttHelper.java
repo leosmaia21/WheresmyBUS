@@ -14,6 +14,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
@@ -53,6 +54,7 @@ public class MqttHelper {
 
             }
         });
+        connect();
 
     }
 
@@ -81,6 +83,7 @@ public class MqttHelper {
                     mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
                     conectado=1;
                     Log.w("Mqtt", ": conectado com sucesso " );
+                    //publish("teste98","funciona crl");
                 }
 
                 @Override
