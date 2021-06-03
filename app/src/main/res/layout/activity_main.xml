@@ -23,7 +23,7 @@
         android:layout_width="176dp"
         android:layout_height="56dp"
         android:backgroundTint="@color/black"
-        android:text="Autocarro"
+        android:text="Selecionar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.955"
