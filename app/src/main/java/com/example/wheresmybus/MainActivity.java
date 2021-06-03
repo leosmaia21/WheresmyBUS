@@ -3,6 +3,7 @@ package com.example.wheresmybus;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -11,6 +12,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.MultiAutoCompleteTextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -50,32 +56,58 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Context context;
     //LatLng[] pino = null;
     MqttHelper mqtt;
-    LatLng pino=new LatLng(40.574291169345166,-8.748526252542232);
+    LatLng pino=null;
+    private static final String[] areas= new String[]{"Aveiro","Coimbra"};
     //private static final String TAG = mapa.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        mqtt= new MqttHelper(getApplicationContext());
-
-
+        Button selecionar = findViewById(R.id.selecionar);
+        mqtt = new MqttHelper(getApplicationContext());
 
 
-        //Objects.requireNonNull(getSupportActionBar()).hide();
+        Objects.requireNonNull(getSupportActionBar()).hide();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         mapFrag = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         assert mapFrag != null;
         mapFrag.getMapAsync(this);
 
+        selecionar.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                LayoutInflater layoutInflater = LayoutInflater.from(MainActivity.this);
+                View promptView = layoutInflater.inflate(R.layout.selecionar_autocarro, null);
+                final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+                alertDialogBuilder.setView(promptView);
+
+                ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this,
+                        android.R.layout.simple_dropdown_item_1line, areas);
+                MultiAutoCompleteTextView textView = (MultiAutoCompleteTextView)
+                        promptView.findViewById(R.id.id_text_select);
+                textView.setAdapter(adapter);
+                textView.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
+                alertDialogBuilder.setCancelable(true)
+                        .setPositiveButton("GO", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+
+                                String x = textView.getText().toString();
+                                // mqttHelper.publish("teste",zonas_selecionas[zonas_selecionas.length-1]);
 
 
+                            }
 
+                        });
 
+                AlertDialog b = alertDialogBuilder.create();
 
+                b.show();
+                b.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.black));
 
+            }
+        });
 
     }
 
@@ -115,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                mqtt.publish("autocarro","qos22222",2);
                 mqtt.subscribeToTopic("teste98",2);
                 mqtt.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
                     @Override
@@ -126,7 +159,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                     @Override
                     public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                        Log.w("login login", mqttMessage.toString());
                         String x=mqttMessage.toString();
                         String[] parts = x.split(",");
                         double part1 = Double.parseDouble(parts[0]); // 004
@@ -145,8 +177,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     }
                 });
-
-
             }
         }, 2000);
 

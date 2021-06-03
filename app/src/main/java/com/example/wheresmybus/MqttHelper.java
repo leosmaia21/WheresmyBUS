@@ -102,9 +102,9 @@ public class MqttHelper {
         return conectado;
     }
 
-    public void subscribeToTopic(String topico,int q) {
+    public void subscribeToTopic(String topico,int qos) {
         try {
-            mqttAndroidClient.subscribe(topico, q, null, new IMqttActionListener() {
+            mqttAndroidClient.subscribe(topico, qos, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     Log.w("Mqtt","Subscribed!");
@@ -123,12 +123,13 @@ public class MqttHelper {
     }
 
 
-    public void publish(String topic, String info) {
+    public void publish(String topic, String info,int qos) {
 
         byte[] encodedInfo = new byte[0];
         try {
             encodedInfo = info.getBytes(StandardCharsets.UTF_8);
             MqttMessage message = new MqttMessage(encodedInfo);
+            message.setQos(qos);
             mqttAndroidClient.publish(topic, message);
             Log.e("Mqtt", "publish done");
         } catch (MqttException e) {
