@@ -1,11 +1,13 @@
 package com.example.wheresmybus;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.PorterDuff;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -13,6 +15,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -64,14 +67,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final String[] areas= new String[]{"Aveiro","Coimbra"};
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button selecionar = findViewById(R.id.selecionar);
-        ImageView autocarro=findViewById(R.id.autocarro_imagem);
+        Button autocarro=findViewById(R.id.butao_autocarro);
         mqtt = new MqttHelper(getApplicationContext());
-
 
         Objects.requireNonNull(getSupportActionBar()).hide();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -107,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         autocarro.setOnClickListener(new View.OnClickListener() { // BUTAO PARA FOCAR NO AUTOCARRO
             public void onClick(View v) {
+
                 if(ha_localizacao) {
                     focar(pino, 14);
                 }
@@ -116,6 +120,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         });
+
+
     }
 
     @Override
