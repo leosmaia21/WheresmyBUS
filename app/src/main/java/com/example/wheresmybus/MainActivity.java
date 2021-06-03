@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     //LatLng[] pino = null;
     MqttHelper mqtt;
     LatLng pino=null;
+    boolean ha_localizacao=false;
 
     private static final String[] areas= new String[]{"Aveiro","Coimbra"};
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -106,7 +107,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         autocarro.setOnClickListener(new View.OnClickListener() { // BUTAO PARA FOCAR NO AUTOCARRO
             public void onClick(View v) {
-                focar(pino,14);
+                if(ha_localizacao) {
+                    focar(pino, 14);
+                }
+                else{
+                    Toast.makeText(MainActivity.this,"Não há localização" , Toast.LENGTH_SHORT).show();
+
+                }
             }
         });
     }
@@ -162,6 +169,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         double part1 = Double.parseDouble(parts[0]); // 004
                         double part2 =Double.parseDouble(parts[1]);
                         pino= new LatLng (part1,part2);
+                        ha_localizacao=true;
                         googleMap.clear();
                         googleMap.addMarker(
                                 new MarkerOptions()
