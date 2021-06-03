@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.Toast;
 
@@ -58,14 +59,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     //LatLng[] pino = null;
     MqttHelper mqtt;
     LatLng pino=null;
+
     private static final String[] areas= new String[]{"Aveiro","Coimbra"};
-    //private static final String TAG = mapa.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button selecionar = findViewById(R.id.selecionar);
+        ImageView autocarro=findViewById(R.id.autocarro_imagem);
         mqtt = new MqttHelper(getApplicationContext());
 
 
@@ -76,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         assert mapFrag != null;
         mapFrag.getMapAsync(this);
 
-        selecionar.setOnClickListener(new View.OnClickListener() {
+        selecionar.setOnClickListener(new View.OnClickListener() { // BUTAO PARA SELECIONAR O AUTOCARRO
             public void onClick(View v) {
 
                 LayoutInflater layoutInflater = LayoutInflater.from(MainActivity.this);
@@ -97,9 +100,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         });
                 AlertDialog b = alertDialogBuilder.create();
                 b.show();
+                b.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.black));
             }
         });
 
+        autocarro.setOnClickListener(new View.OnClickListener() { // BUTAO PARA FOCAR NO AUTOCARRO
+            public void onClick(View v) {
+                focar(pino,14);
+            }
+        });
     }
 
     @Override
@@ -115,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mGoogleMap = googleMap;
-
+        mGoogleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
 
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(120000); // two minute interval
@@ -133,12 +142,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             checkLocationPermission();
         }
 
-
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mqtt.publish("autocarro","qos22222",2);
                 mqtt.subscribeToTopic("teste98",2);
                 mqtt.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
                     @Override
@@ -155,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         double part1 = Double.parseDouble(parts[0]); // 004
                         double part2 =Double.parseDouble(parts[1]);
                         pino= new LatLng (part1,part2);
-                        mGoogleMap.clear();
+                        googleMap.clear();
                         googleMap.addMarker(
                                 new MarkerOptions()
                                         .draggable(false)
@@ -172,17 +179,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }, 2000);
 
 
-
-
-
-
     }
 
-
-
-
-
-
+    private void focar(LatLng marker,int zoom){
+        mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker, zoom));
+    }
 
     LocationCallback mLocationCallback = new LocationCallback() {
         @Override
@@ -196,9 +197,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (mCurrLocationMarker != null) {
                     mCurrLocationMarker.remove();
                 }
-                Context context = getApplicationContext();
-                Toast toast = Toast.makeText(context, "mapa a funcionar", Toast.LENGTH_SHORT);
-                toast.show();
                 //Place current location marker
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
                 //move map camera
@@ -246,31 +244,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // location-related task you need to do.
-                    if (ContextCompat.checkSelfPermission(this,
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
-                        mGoogleMap.setMyLocationEnabled(true);
-                    }
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                    Toast.makeText(this, "permission denied", Toast.LENGTH_LONG).show();
+        if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {// If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // permission was granted, yay! Do the
+                // location-related task you need to do.
+                if (ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+                    mGoogleMap.setMyLocationEnabled(true);
                 }
-                return;
+            } else {
+                // permission denied, boo! Disable the
+                // functionality that depends on this permission.
+                Toast.makeText(this, "permission denied", Toast.LENGTH_LONG).show();
             }
-
             // other 'case' lines to check for other
             // permissions this app might request
         }

@@ -24,7 +24,7 @@ import java.util.Objects;
 
 public class MqttHelper {
     public MqttAndroidClient mqttAndroidClient;
-   private int conectado=0;
+   static private int conectado=0;
     final String serverUri = "tcp://broker.hivemq.com:1883";
 
     String clientId = MqttClient.generateClientId();
@@ -98,7 +98,7 @@ public class MqttHelper {
             ex.printStackTrace();
         }
     }
-    public int getConectado(){
+     static public int getConectado(){
         return conectado;
     }
 
