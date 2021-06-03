@@ -34,11 +34,13 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -112,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(View v) {
 
                 if(ha_localizacao) {
-                    focar(pino, 14);
+                    focar(pino,15);
                 }
                 else{
                     Toast.makeText(MainActivity.this,"Não há localização" , Toast.LENGTH_SHORT).show();
@@ -195,9 +197,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
-    private void focar(LatLng marker,int zoom){
-        mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker, zoom));
+    private void focar(LatLng marker,int zoom) {
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(marker)      // Sets the center of the map to Mountain View
+                .zoom(zoom)               // Sets the zoom
+
+                .build();                   // Creates a CameraPosition from the builder
+        mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
+
 
     LocationCallback mLocationCallback = new LocationCallback() {
         @Override
