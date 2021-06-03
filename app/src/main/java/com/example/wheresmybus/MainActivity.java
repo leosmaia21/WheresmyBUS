@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.Toast;
@@ -85,27 +86,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this,
                         android.R.layout.simple_dropdown_item_1line, areas);
-                MultiAutoCompleteTextView textView = (MultiAutoCompleteTextView)
+                AutoCompleteTextView textView = (AutoCompleteTextView)
                         promptView.findViewById(R.id.id_text_select);
                 textView.setAdapter(adapter);
-                textView.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
                 alertDialogBuilder.setCancelable(true)
-                        .setPositiveButton("GO", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-
-                                String x = textView.getText().toString();
-                                // mqttHelper.publish("teste",zonas_selecionas[zonas_selecionas.length-1]);
-
-
-                            }
+                        .setPositiveButton("OK", (dialog, id) -> {
+                            String x=textView.getText().toString();
+                            mqtt.publish("teste1",x,2);
 
                         });
-
                 AlertDialog b = alertDialogBuilder.create();
-
                 b.show();
-                b.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.black));
-
             }
         });
 
@@ -210,15 +201,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 toast.show();
                 //Place current location marker
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-               /* MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(latLng);
-                markerOptions.title("Current Position");
-                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
-                mCurrLocationMarker = mGoogleMap.addMarker(markerOptions);*/
-
                 //move map camera
-
-                mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 8));
+                mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
             }
         }
     };
