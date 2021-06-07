@@ -52,6 +52,8 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import java.util.List;
 import java.util.Objects;
 
+import static java.lang.Thread.sleep;
+
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     GoogleMap mGoogleMap;
@@ -63,8 +65,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Context context;
     //LatLng[] pino = null;
     MqttHelper mqtt;
-    LatLng pino=null;
+    LatLng next=null;
+    LatLng past=null;
     boolean ha_localizacao=false;
+    boolean primeiro=true;
 
     private static final String[] areas= new String[]{"Aveiro","Coimbra"};
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -77,9 +81,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button selecionar = findViewById(R.id.selecionar);
         Button autocarro=findViewById(R.id.butao_autocarro);
         mqtt = new MqttHelper(getApplicationContext());
-
+        past=new LatLng(0,0);
         Objects.requireNonNull(getSupportActionBar()).hide();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        
+
 
         mapFrag = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         assert mapFrag != null;
@@ -112,9 +119,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         autocarro.setOnClickListener(new View.OnClickListener() { // BUTAO PARA FOCAR NO AUTOCARRO
             public void onClick(View v) {
-
                 if(ha_localizacao) {
-                    focar(pino,15);
+                    focar(next,17);
                 }
                 else{
                     Toast.makeText(MainActivity.this,"Não há localização" , Toast.LENGTH_SHORT).show();
@@ -159,8 +165,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
+
             @Override
             public void run() {
+                mqtt.publish("teste","mensagem no arrive ",2);
                 mqtt.subscribeToTopic("teste98",2);
                 mqtt.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
                     @Override
@@ -173,17 +181,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
                         String x=mqttMessage.toString();
+
                         String[] parts = x.split(",");
                         double part1 = Double.parseDouble(parts[0]); // 004
                         double part2 =Double.parseDouble(parts[1]);
-                        pino= new LatLng (part1,part2);
+                        next= new LatLng (part1,part2);
                         ha_localizacao=true;
                         googleMap.clear();
+
+
+                        double fLat = (Math.PI * past.latitude) / 180.0f;
+                        double fLng = (Math.PI * past.longitude) / 180.0f;
+                        double tLat = (Math.PI * next.latitude) / 180.0f;
+                        double tLng = (Math.PI * next.longitude) / 180.0f;
+
+                        double degree = radiansToDegrees(Math.atan2(Math.sin(tLng - fLng) * Math.cos(tLat), Math.cos(fLat) * Math.sin(tLat) - Math.sin(fLat) * Math.cos(tLat) * Math.cos(tLng - fLng)));
+                        double bearing;
+                        if (degree >= 0) {
+                            bearing = degree;
+                        } else {
+                            bearing = 360 + degree;
+                        }
+                        past=next;
                         googleMap.addMarker(
                                 new MarkerOptions()
                                         .draggable(false)
-                                        .position(pino)
-                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.autocarro)));
+                                        .position(next)
+                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.autocarro))
+                                        .rotation((float)bearing));
+
 
                     }
                     @Override
@@ -286,5 +312,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             // permissions this app might request
         }
     }
+    private double radiansToDegrees(double x) {
+        return x * 180.0 / Math.PI;
+    }
+
 
 }

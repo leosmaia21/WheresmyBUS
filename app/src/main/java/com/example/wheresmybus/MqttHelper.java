@@ -24,7 +24,7 @@ import java.util.Objects;
 
 public class MqttHelper {
     public MqttAndroidClient mqttAndroidClient;
-   static private int conectado=0;
+   private volatile boolean conectado= false;
     final String serverUri = "tcp://broker.hivemq.com:1883";
 
     String clientId = MqttClient.generateClientId();
@@ -81,7 +81,7 @@ public class MqttHelper {
                     disconnectedBufferOptions.setPersistBuffer(false);
                     disconnectedBufferOptions.setDeleteOldestMessages(false);
                     mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                    conectado=1;
+                    conectado=true;
                     Log.w("Mqtt", ": conectado com sucesso " );
                     //publish("teste98","funciona crl");
                 }
@@ -89,7 +89,7 @@ public class MqttHelper {
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     Log.w("Mqtt", "Failed to connect to: " + serverUri + exception.toString());
-                    conectado=0;
+                    conectado=false;
                 }
             });
 
@@ -98,7 +98,7 @@ public class MqttHelper {
             ex.printStackTrace();
         }
     }
-     static public int getConectado(){
+     public boolean getConectado(){
         return conectado;
     }
 
