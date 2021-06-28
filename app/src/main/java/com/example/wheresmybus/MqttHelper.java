@@ -24,7 +24,7 @@ import java.util.Objects;
 
 public class MqttHelper {
     public MqttAndroidClient mqttAndroidClient;
-   private volatile boolean conectado= false;
+   public  boolean conectado= false;
     final String serverUri = "tcp://broker.hivemq.com:1883";
 
     String clientId = MqttClient.generateClientId();

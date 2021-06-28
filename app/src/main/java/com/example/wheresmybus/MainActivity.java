@@ -51,11 +51,13 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static java.lang.Thread.sleep;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
+    private static final java.util.UUID UUID = null;
     GoogleMap mGoogleMap;
     SupportMapFragment mapFrag;
     LocationRequest mLocationRequest;
@@ -69,10 +71,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     LatLng past=null;
     boolean ha_localizacao=false;
     boolean primeiro=true;
-
+    boolean x=false;
+    double bearing=0;
+    String passado="";
     private static final String[] areas= new String[]{"Aveiro","Coimbra"};
     private static final String TAG = MainActivity.class.getSimpleName();
-
+    String uuid=java.util.UUID.randomUUID().toString();;
+    String autocarrox;
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,11 +86,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button selecionar = findViewById(R.id.selecionar);
         Button autocarro=findViewById(R.id.butao_autocarro);
         mqtt = new MqttHelper(getApplicationContext());
-        past=new LatLng(0,0);
+        //past=new LatLng(0,0);
         Objects.requireNonNull(getSupportActionBar()).hide();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        
+
+
+
 
 
         mapFrag = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -107,8 +114,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 textView.setAdapter(adapter);
                 alertDialogBuilder.setCancelable(true)
                         .setPositiveButton("OK", (dialog, id) -> {
-                            String x=textView.getText().toString();
-                            mqtt.publish("teste1",x,2);
+                            autocarrox=textView.getText().toString();
+                            Toast.makeText(MainActivity.this,uuid , Toast.LENGTH_SHORT).show();
+                            String j=autocarrox+"-"+uuid;
+                            mqtt.publish("home/wheresmybus/app",j,2);
 
                         });
                 AlertDialog b = alertDialogBuilder.create();
@@ -123,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     focar(next,17);
                 }
                 else{
-                    Toast.makeText(MainActivity.this,"Não há localização" , Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,"Não há localizações   : (" , Toast.LENGTH_SHORT).show();
 
                 }
             }
@@ -168,58 +177,78 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             @Override
             public void run() {
-                mqtt.publish("teste","mensagem no arrive ",2);
-                mqtt.subscribeToTopic("teste98",2);
-                mqtt.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
-                    @Override
-                    public void connectComplete(boolean b, String s) {
-                        Log.w("connectado!!!!  ", s);
-                    }
-                    @Override
-                    public void connectionLost(Throwable throwable) {
-                    }
-                    @Override
-                    public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                        String x=mqttMessage.toString();
-
-                        String[] parts = x.split(",");
-                        double part1 = Double.parseDouble(parts[0]); // 004
-                        double part2 =Double.parseDouble(parts[1]);
-                        next= new LatLng (part1,part2);
-                        ha_localizacao=true;
-                        googleMap.clear();
-
-
-                        double fLat = (Math.PI * past.latitude) / 180.0f;
-                        double fLng = (Math.PI * past.longitude) / 180.0f;
-                        double tLat = (Math.PI * next.latitude) / 180.0f;
-                        double tLng = (Math.PI * next.longitude) / 180.0f;
-
-                        double degree = radiansToDegrees(Math.atan2(Math.sin(tLng - fLng) * Math.cos(tLat), Math.cos(fLat) * Math.sin(tLat) - Math.sin(fLat) * Math.cos(tLat) * Math.cos(tLng - fLng)));
-                        double bearing;
-                        if (degree >= 0) {
-                            bearing = degree;
-                        } else {
-                            bearing = 360 + degree;
+                //if (autocarrox != null) {
+                    mqtt.publish("home/wheresmybus/app",autocarrox+"-"+uuid,2);
+                    mqtt.subscribeToTopic(uuid, 2);
+                    mqtt.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+                        @Override
+                        public void connectComplete(boolean b, String s) {
+                            Log.w("connectado!!!!  ", s);
                         }
-                        past=next;
-                        googleMap.addMarker(
-                                new MarkerOptions()
-                                        .draggable(false)
-                                        .position(next)
-                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.autocarro))
-                                        .rotation((float)bearing));
+
+                        @Override
+                        public void connectionLost(Throwable throwable) {
+                        }
+
+                        @Override
+                        public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
+                            String x = mqttMessage.toString();
+
+                            String[] parts = x.split(",");
+                            double part1 = Double.parseDouble(parts[0]); // 004
+                            double part2 = Double.parseDouble(parts[1]);
+                            next = new LatLng(part1, part2);
+                            ha_localizacao = true;
 
 
-                    }
-                    @Override
-                    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+                            if (primeiro) {
+                                past = next;
+                                primeiro = false;
+                            }
+                            if(!passado.equals(x)) {
+                                googleMap.clear();
+                            double fLat = (Math.PI * past.latitude) / 180.0f;
+                            double fLng = (Math.PI * past.longitude) / 180.0f;
+                            double tLat = (Math.PI * next.latitude) / 180.0f;
+                            double tLng = (Math.PI * next.longitude) / 180.0f;
 
-                    }
-                });
-            }
+                            double degree = radiansToDegrees(Math.atan2(Math.sin(tLng - fLng) * Math.cos(tLat), Math.cos(fLat) * Math.sin(tLat) - Math.sin(fLat) * Math.cos(tLat) * Math.cos(tLng - fLng)));
+
+                            if (degree >= 0) {
+                                bearing = degree;
+                            } else {
+                                bearing = 360 + degree;
+                            }
+
+
+                                googleMap.addMarker(
+                                        new MarkerOptions()
+                                                .draggable(false)
+                                                .position(next)
+                                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.autocarro))
+                                                .rotation((float) bearing));
+                            }
+                            past = next;
+                            passado=x;
+
+                            final Handler handler1 = new Handler();
+                            handler1.postDelayed(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    mqtt.publish("home/wheresmybus/app",autocarrox+"-"+uuid,2);
+                                }
+
+                        } , 5000);
+                        }
+
+                        @Override
+                        public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+                        }
+                    });
+               // }
+           }
         }, 2000);
-
 
     }
 
@@ -231,8 +260,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .build();                   // Creates a CameraPosition from the builder
         mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
-
-
     LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
@@ -252,7 +279,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
     };
-
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
 
     private void checkLocationPermission() {
@@ -262,7 +288,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
-
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
