@@ -71,12 +71,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     LatLng past=null;
     boolean ha_localizacao=false;
     boolean primeiro=true;
-    boolean x=false;
     double bearing=0;
     String passado="";
-    private static final String[] areas= new String[]{"Aveiro","Coimbra"};
+
+    private static final String[] areas= new String[200];
     private static final String TAG = MainActivity.class.getSimpleName();
-    String uuid=java.util.UUID.randomUUID().toString();;
+    String uuid=java.util.UUID.randomUUID().toString();
     String autocarrox;
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -89,12 +89,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         //past=new LatLng(0,0);
         Objects.requireNonNull(getSupportActionBar()).hide();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-
-
-
-
-
+        for(int i=0;i<areas.length;i++){
+            areas[i]=String.valueOf(i);
+        }
         mapFrag = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         assert mapFrag != null;
         mapFrag.getMapAsync(this);
@@ -115,9 +112,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 alertDialogBuilder.setCancelable(true)
                         .setPositiveButton("OK", (dialog, id) -> {
                             autocarrox=textView.getText().toString();
-                            Toast.makeText(MainActivity.this,uuid , Toast.LENGTH_SHORT).show();
-                            String j=autocarrox+"-"+uuid;
-                            mqtt.publish("home/wheresmybus/app",j,2);
+                            //Toast.makeText(MainActivity.this,uuid , Toast.LENGTH_SHORT).show();
+                            String j=autocarrox+"/"+uuid;
+                            mqtt.publish("home/wheresmybus/app",j,0);
+                            ha_localizacao=false;
+                            primeiro=true;
 
                         });
                 AlertDialog b = alertDialogBuilder.create();
@@ -178,18 +177,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void run() {
                 //if (autocarrox != null) {
-                    mqtt.publish("home/wheresmybus/app",autocarrox+"-"+uuid,2);
-                    mqtt.subscribeToTopic(uuid, 2);
+                    mqtt.subscribeToTopic(uuid, 0);
+
+                    mqtt.publish("home/wheresmybus/app",autocarrox+"/"+uuid,0);
                     mqtt.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
                         @Override
-                        public void connectComplete(boolean b, String s) {
-                            Log.w("connectado!!!!  ", s);
-                        }
-
+                        public void connectComplete(boolean b, String s) { Log.w("connectado!!!!  ", s); }
                         @Override
-                        public void connectionLost(Throwable throwable) {
-                        }
-
+                        public void connectionLost(Throwable throwable) { }
                         @Override
                         public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
                             String x = mqttMessage.toString();
@@ -197,6 +192,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             String[] parts = x.split(",");
                             double part1 = Double.parseDouble(parts[0]); // 004
                             double part2 = Double.parseDouble(parts[1]);
+                            String hora=parts[2];
+
                             next = new LatLng(part1, part2);
                             ha_localizacao = true;
 
@@ -207,44 +204,42 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             }
                             if(!passado.equals(x)) {
                                 googleMap.clear();
-                            double fLat = (Math.PI * past.latitude) / 180.0f;
-                            double fLng = (Math.PI * past.longitude) / 180.0f;
-                            double tLat = (Math.PI * next.latitude) / 180.0f;
-                            double tLng = (Math.PI * next.longitude) / 180.0f;
+                                double fLat = (Math.PI * past.latitude) / 180.0f;
+                                double fLng = (Math.PI * past.longitude) / 180.0f;
+                                double tLat = (Math.PI * next.latitude) / 180.0f;
+                                double tLng = (Math.PI * next.longitude) / 180.0f;
 
-                            double degree = radiansToDegrees(Math.atan2(Math.sin(tLng - fLng) * Math.cos(tLat), Math.cos(fLat) * Math.sin(tLat) - Math.sin(fLat) * Math.cos(tLat) * Math.cos(tLng - fLng)));
+                                double degree = radiansToDegrees(Math.atan2(Math.sin(tLng - fLng) * Math.cos(tLat), Math.cos(fLat) * Math.sin(tLat) - Math.sin(fLat) * Math.cos(tLat) * Math.cos(tLng - fLng)));
 
-                            if (degree >= 0) {
-                                bearing = degree;
-                            } else {
-                                bearing = 360 + degree;
-                            }
+                                if (degree >= 0) {
+                                    bearing = degree;
+                                } else {
+                                    bearing = 360 + degree;
+                                }
 
 
-                                googleMap.addMarker(
-                                        new MarkerOptions()
-                                                .draggable(false)
-                                                .position(next)
-                                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.autocarro))
-                                                .rotation((float) bearing));
+                                    Objects.requireNonNull(googleMap.addMarker(
+                                            new MarkerOptions()
+                                                    .draggable(false)
+                                                    .position(next)
+                                                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.autocarro))
+                                                    .rotation((float) bearing)
+                                                    .title(hora))).showInfoWindow();
                             }
                             past = next;
                             passado=x;
-
                             final Handler handler1 = new Handler();
                             handler1.postDelayed(new Runnable() {
 
                                 @Override
                                 public void run() {
-                                    mqtt.publish("home/wheresmybus/app",autocarrox+"-"+uuid,2);
+                                    mqtt.publish("home/wheresmybus/app",autocarrox+"/"+uuid,0);
                                 }
 
-                        } , 5000);
+                        } , 1500);
                         }
-
                         @Override
-                        public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-                        }
+                        public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {}
                     });
                // }
            }
@@ -314,8 +309,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {// If request is cancelled, the result arrays are empty.
             if (grantResults.length > 0

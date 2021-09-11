@@ -36,7 +36,7 @@ public class MqttHelper {
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean b, String s) {
-                Log.w("mqtt", s);
+                Log.w("mqtt"    , s);
             }
 
             @Override
